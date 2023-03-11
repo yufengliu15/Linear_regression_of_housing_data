@@ -1,4 +1,4 @@
-# Linear regression of housing data
+# Linear Regression
 Using the data from Lowest-rent, I will create a linear regression model that best fits the data.
 
 # Objectives
