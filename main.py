@@ -92,7 +92,8 @@ def compute_gradient(X,y,w,b):
     return dj_db, dj_dw
 
 def gradient_descent(X, y, w_in, b_in, cost_function, gradient_function, alpha, num_iters):
-    """_summary_
+    """
+    gradient descent
 
     Args:
         X (ndarray): Data, m examples with n features
@@ -154,9 +155,6 @@ def run_gradient_descent(X_train, y_train, iterations, alpha):
     # run gradient descent 
     w_final, b_final, J_hist = gradient_descent(X_train, y_train, initial_w, initial_b, compute_cost, compute_gradient, alpha, iterations)
     print(f"b,w found by gradient descent: {b_final:0.2f},{w_final} ")
-    m,_ = X_train.shape
-    for i in range(m):
-        print(f"prediction: {np.dot(X_train[i], w_final) + b_final:0.2f}, target value: {y_train[i]}")
     
     return w_final, b_final, J_hist
 
@@ -211,27 +209,54 @@ def find_top_5(user_features,X_train, y_train):
     # first looks for same number of beds
     for i in range(len(X_train)):
         if (user_features[0] == X_train[i][0]):
-            same_num_beds[i] = X_train[i][0]
+            same_num_beds[i] = X_train[i]
     
-    close_match = {}
+    close_match = []
     # from the list that contains the same number of beds, find the same number of baths
     for i in same_num_beds:
         if (user_features[1] == same_num_beds[i][1]):
-            close_match.append(same_num_beds[i])
+            temp = []
+            temp.append(y_train[i])
+            temp.append(same_num_beds[i])
+            close_match.append(temp)
+        if (len(close_match) == 5):
+            break
     
+    return close_match
             
     
 def run_prediction(w,b, X_train, y_train):
+    """
+    asks user for number of beds, baths or square footage to apply the model. outputs top 5 real world data if it exists to compare
+
+    Args:
+        w (ndarray): w
+        b (scalar): b
+        X_train (ndarray): non normalized features
+        y_train (ndarray): prices of real world data
+    """
     while True:
+        print ("Type 'q' to quit anytime")
         user_bed = input("Input number of beds: ")
+        if (user_bed == 'q'):
+            break
         user_bath = input("Input number of baths: ")
         user_square_ft = input("Input square footage: ")
-        user_features = np.array([user_bed, user_bath, user_square_ft])
-        print(f"Prediction: {np.dot(user_features, w) + b:0.2f}")
-        
-            
-        print("======================================")
-        print("Real world data: ")
+        try:
+            # have to convert user_features into a row column, because our model uses the z score nomalization, and we cannot use normal values with the model
+            user_features = np.array([user_bed, user_bath, user_square_ft], dtype=float)
+            row_user_features = np.reshape(user_features, (1,3))
+            user_norm,_,_ = zscore_normalize_features(np.append(X_train, row_user_features,axis=0))
+            print (user_norm[-1])
+
+            print(f"Prediction: {np.dot(user_norm[-1], w) + b:0.2f}")
+            print("======================================")
+            print("Real world data: ")
+            real_world_list = find_top_5(user_features, X_train, y_train)
+            for i in range(len(real_world_list)):
+                print (f"{i+1}. ${real_world_list[i][0]}: {real_world_list[i][1][0]} beds, {real_world_list[i][1][1]} baths, {real_world_list[i][1][2]} square ft")
+        except:
+            print ("Not a number")
 
 # =========================== MAIN CODE =============================
 
@@ -248,5 +273,5 @@ w_init = np.array([3.9133535, 1.75376741, 0.36032453])
 X_norm, X_mu, X_sigma = zscore_normalize_features(X_train)
 
 # run gradient descent
-w_norm, b_norm, hist = run_gradient_descent(X_norm, y_train, 300, 1.0e-1)
-
+w_final, b_final, hist = run_gradient_descent(X_norm, y_train, 300, 1.0e-1)
+run_prediction(w_final, b_final, X_train, y_train)
