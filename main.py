@@ -236,6 +236,7 @@ def run_prediction(w,b, X_train, y_train):
         y_train (ndarray): prices of real world data
     """
     while True:
+        print("======================================")
         print ("Type 'q' to quit anytime")
         user_bed = input("Input number of beds: ")
         if (user_bed == 'q'):
@@ -247,14 +248,14 @@ def run_prediction(w,b, X_train, y_train):
             user_features = np.array([user_bed, user_bath, user_square_ft], dtype=float)
             row_user_features = np.reshape(user_features, (1,3))
             user_norm,_,_ = zscore_normalize_features(np.append(X_train, row_user_features,axis=0))
-            print (user_norm[-1])
-
+            print("======================================")
             print(f"Prediction: {np.dot(user_norm[-1], w) + b:0.2f}")
             print("======================================")
             print("Real world data: ")
             real_world_list = find_top_5(user_features, X_train, y_train)
             for i in range(len(real_world_list)):
                 print (f"{i+1}. ${real_world_list[i][0]}: {real_world_list[i][1][0]} beds, {real_world_list[i][1][1]} baths, {real_world_list[i][1][2]} square ft")
+            print("======================================")
         except:
             print ("Not a number")
 
