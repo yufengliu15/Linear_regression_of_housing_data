@@ -27,6 +27,7 @@ with open ('data.csv', 'r') as dataFile:
             
             features.append(tempFeature)
         firstProperty = False
+    dataFile.close()
         
 # =========================== FUNCTIONS =============================
 def predict_single_loop(x, w, b):
@@ -94,14 +95,12 @@ def gradient_descent(X, y, w_in, b_in, cost_function, gradient_function, alpha, 
     """_summary_
 
     Args:
-        X (_type_): _description_
-        y (_type_): _description_
-        w_in (_type_): _description_
-        b_in (_type_): _description_
-        cost_function (_type_): _description_
-        gradient_function (_type_): _description_
-        alpha (_type_): _description_
-        num_iters (_type_): _description_
+        X (ndarray): Data, m examples with n features
+        y (ndarray): target values 
+        w_in (scalar): initial w
+        b_in (scalar): initial b
+        alpha (scalar): learning rate
+        num_iters (scalar): number of iterations
     """
     # An array to store cost J and w's at each iteration primarily for graphing later
     J_history = []
@@ -158,7 +157,10 @@ def run_gradient_descent(X_train, y_train, iterations, alpha):
     m,_ = X_train.shape
     for i in range(m):
         print(f"prediction: {np.dot(X_train[i], w_final) + b_final:0.2f}, target value: {y_train[i]}")
+    
+    return w_final, b_final, J_hist
 
+def show_figures():
     # plot cost versus iteration  
     fig, (ax1, ax2) = plt.subplots(1, 2, constrained_layout=True, figsize=(12, 4))
     ax1.plot(J_hist)
@@ -166,9 +168,72 @@ def run_gradient_descent(X_train, y_train, iterations, alpha):
     ax1.set_title("Cost vs. iteration");  ax2.set_title("Cost vs. iteration (tail)")
     ax1.set_ylabel('Cost')             ;  ax2.set_ylabel('Cost') 
     ax1.set_xlabel('iteration step')   ;  ax2.set_xlabel('iteration step') 
+    
+    # graphs for each feature 
+    fig,ax=plt.subplots(1, 3, figsize=(12, 3), sharey=True)
+    for i in range(len(ax)):
+        ax[i].scatter(X_train[:,i],y_train)
+        ax[i].set_xlabel(X_features[i])
+    ax[0].set_ylabel("Price ($/month)")
+    
+    #predict target using normalized features
+    m = X_norm.shape[0]
+    yp = np.zeros(m)
+    for i in range(m):
+        yp[i] = np.dot(X_norm[i], w_norm) + b_norm
+    
+    # plot predictions and targets versus original features    
+    fig,ax=plt.subplots(1,3,figsize=(12, 3),sharey=True)
+    for i in range(len(ax)):
+        ax[i].scatter(X_train[:,i],y_train, label = 'target')
+        ax[i].set_xlabel(X_features[i])
+        ax[i].scatter(X_train[:,i],yp,color=["orange"], label = 'predict')
+    ax[0].set_ylabel("Price"); ax[0].legend();
+    fig.suptitle("target versus prediction using z-score normalized model")
+    
     plt.show()
     
-    return w_final, b_final, J_hist
+def find_top_5(user_features,X_train, y_train):
+    """
+    finds the closest match of real world housing to user_features
+
+    Args:
+        user_features (ndarray (n,)): user input of bed, bath, square ft
+        X_train (ndarray (n,m)): data set
+        y_train (_type_): contains prices related to X_train
+    
+    Returns:
+        close_match (array): length of 5 array
+    """
+    
+    same_num_beds = {}
+    
+    # first looks for same number of beds
+    for i in range(len(X_train)):
+        if (user_features[0] == X_train[i][0]):
+            same_num_beds[i] = X_train[i][0]
+    
+    close_match = {}
+    # from the list that contains the same number of beds, find the same number of baths
+    for i in same_num_beds:
+        if (user_features[1] == same_num_beds[i][1]):
+            close_match.append(same_num_beds[i])
+    
+            
+    
+def run_prediction(w,b, X_train, y_train):
+    while True:
+        user_bed = input("Input number of beds: ")
+        user_bath = input("Input number of baths: ")
+        user_square_ft = input("Input square footage: ")
+        user_features = np.array([user_bed, user_bath, user_square_ft])
+        print(f"Prediction: {np.dot(user_features, w) + b:0.2f}")
+        
+            
+        print("======================================")
+        print("Real world data: ")
+
+# =========================== MAIN CODE =============================
 
 # initializing variables for ML
 X_train = np.array(features)
@@ -179,34 +244,9 @@ y_train = np.array(pricing)
 b_init = 585.1811367994083
 w_init = np.array([3.9133535, 1.75376741, 0.36032453])
 
-# graphs for each feature 
-fig,ax=plt.subplots(1, 3, figsize=(12, 3), sharey=True)
-for i in range(len(ax)):
-    ax[i].scatter(X_train[:,i],y_train)
-    ax[i].set_xlabel(X_features[i])
-ax[0].set_ylabel("Price ($/month)")
-plt.show()
-
 # normalize the original features
 X_norm, X_mu, X_sigma = zscore_normalize_features(X_train)
-print(f"X_mu = {X_mu}, \nX_sigma = {X_sigma}")
-print(f"Peak to Peak range by column in Raw        X:{np.ptp(X_train,axis=0)}")   
-print(f"Peak to Peak range by column in Normalized X:{np.ptp(X_norm,axis=0)}")
 
+# run gradient descent
 w_norm, b_norm, hist = run_gradient_descent(X_norm, y_train, 300, 1.0e-1)
 
-#predict target using normalized features
-m = X_norm.shape[0]
-yp = np.zeros(m)
-for i in range(m):
-    yp[i] = np.dot(X_norm[i], w_norm) + b_norm
-
-    # plot predictions and targets versus original features    
-fig,ax=plt.subplots(1,3,figsize=(12, 3),sharey=True)
-for i in range(len(ax)):
-    ax[i].scatter(X_train[:,i],y_train, label = 'target')
-    ax[i].set_xlabel(X_features[i])
-    ax[i].scatter(X_train[:,i],yp,color=["orange"], label = 'predict')
-ax[0].set_ylabel("Price"); ax[0].legend();
-fig.suptitle("target versus prediction using z-score normalized model")
-plt.show()
